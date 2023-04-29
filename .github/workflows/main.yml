@@ -8,16 +8,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Node.js 16
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
-
-      - name: Check out repository
-        uses: actions/checkout@v3
-
+      - name: Install dependencies
+        run: |
+          npm install
       - name: Deploy Ghost Theme
-        uses: TryGhost/action-deploy-theme@v1
-        with:
-          api-url: ${{ secrets.GHOST_ADMIN_API_URL }}
-          api-key: ${{ secrets.GHOST_ADMIN_API_KEY }}
+        env:
+          GHOST_ADMIN_API_URL: ${{ secrets.GHOST_ADMIN_API_URL }}
+          GHOST_ADMIN_API_KEY: ${{ secrets.GHOST_ADMIN_API_KEY }}
+        run: |
+          npx -p @tryghost/zip@0.1.0 -p @tryghost/admin-api@1.6.2 -c 'const fs = require("fs"); const path = require("path"); const Zip = require("@tryghost/zip"); const GhostAdminAPI = require("@tryghost/admin-api"); const api = new GhostAdminAPI({ url: process.env.GHOST_ADMIN_API_URL, key: process.env.GHOST_ADMIN_API_KEY, version: "v4" }); (async () => { const output = path.join(process.cwd(), "theme.zip"); await Zip.zip(process.cwd(), output); console.log("Theme zipped"); const result = await api.themes.upload({ file: output }); console.log("Theme uploaded", result); })().catch((error) => { console.error(error); process.exit(1); });'
